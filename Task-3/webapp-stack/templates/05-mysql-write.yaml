@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-write
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.mysql.write.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: mysql
+      role: write
+  template:
+    metadata:
+      labels:
+        app: mysql
+        role: write
+    spec:
+      containers:
+        - name: mysql
+          image: "{{ .Values.mysql.write.image.repository }}:{{ .Values.mysql.write.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: mysql
+              containerPort: {{ .Values.mysql.port }}
+          env:
+            - name: MYSQL_ROLE
+              value: source
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: root-password
+            - name: APP_DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: webapp-config
+                  key: MYSQL_DATABASE
+            - name: APP_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: app-user
+            - name: APP_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: app-password
+            - name: MYSQL_REPL_USER
+              value: {{ .Values.mysql.auth.replicationUser | quote }}
+            - name: MYSQL_REPL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: replication-password
+          startupProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -Nse "SELECT 1" >/dev/null
+            periodSeconds: 10
+            failureThreshold: 36
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -Nse "SELECT 1" >/dev/null
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "mysqladmin ping -h 127.0.0.1 --silent"]
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 768Mi
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+              subPath: write
+      volumes:
+        - name: mysql-data
+          persistentVolumeClaim:
+            claimName: mysql-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-write
+  namespace: {{ .Release.Namespace }}
+spec:
+  type: ClusterIP
+  selector:
+    app: mysql
+    role: write
+  ports:
+    - name: mysql
+      port: {{ .Values.mysql.port }}
+      targetPort: mysql

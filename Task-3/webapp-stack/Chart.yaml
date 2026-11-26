@@ -1,0 +1,6 @@
+apiVersion: v2
+name: webapp-stack
+description: MLOps MENA Kubernetes Mastery Task 3 and 4
+version: 0.1.0
+appVersion: "task3"
+type: application

@@ -1,0 +1,6 @@
+identity/
+values.local.yaml
+*.key
+*.crt
+*.csr
+*.kubeconfig

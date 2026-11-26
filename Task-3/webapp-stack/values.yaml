@@ -1,0 +1,38 @@
+app:
+  replicaCount: 2
+  image:
+    repository: webapp-api
+    tag: task3
+  title: hello in MLOPS MENA COMMUNITY
+  environment: dev
+  port: 8000
+mysql:
+  write:
+    replicaCount: 1
+    image:
+      repository: webapp-mysql
+      tag: task3
+  read:
+    replicaCount: 2
+    image:
+      repository: webapp-mysql
+      tag: task3
+  auth:
+    database: webapp
+    user: webapp
+    rootPassword: ""
+    appPassword: ""
+    replicationUser: repl
+    replicationPassword: ""
+  port: 3306
+storage:
+  pv:
+    size: 2Gi
+    path: /data/webapp-mysql
+  pvc:
+    size: 2Gi
+  nodeName: mlops-mena-m02
+  className: manual
+ingress:
+  className: nginx
+  path: /

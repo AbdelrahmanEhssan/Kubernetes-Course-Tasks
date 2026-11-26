@@ -1,0 +1,6 @@
+Release: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+FastAPI: webapp-api
+Writer: mysql-write
+Readers: mysql-read
+Ingress: webapp-ingress
